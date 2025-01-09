@@ -1,86 +1,164 @@
--- Table: Users
-CREATE TABLE Users (
-    UserID INT PRIMARY KEY AUTO_INCREMENT,
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) UNIQUE NOT NULL,
-    PhoneNumber VARCHAR(15),
-    Address TEXT,
-    MembershipDate DATE NOT NULL
-);
+-- Create Library Database
+CREATE DATABASE IF NOT EXISTS LibraryDB;
+USE LibraryDB;
 
--- Table: Books
+-- Create Books Table
 CREATE TABLE Books (
-    BookID INT PRIMARY KEY AUTO_INCREMENT,
-    Title VARCHAR(255) NOT NULL,
-    Author VARCHAR(255) NOT NULL,
-    Genre VARCHAR(100),
-    ISBN VARCHAR(20) UNIQUE NOT NULL,
-    Publisher VARCHAR(255),
-    PublicationYear YEAR,
-    CopiesAvailable INT DEFAULT 1
+    BookID INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(100),
+    Author VARCHAR(100),
+    Genre VARCHAR(50),
+    ISBN VARCHAR(20),
+    PublicationYear INT,
+    CopiesAvailable INT
 );
 
--- Table: BorrowRecords
-CREATE TABLE BorrowRecords (
-    RecordID INT PRIMARY KEY AUTO_INCREMENT,
-    UserID INT NOT NULL,
-    BookID INT NOT NULL,
-    BorrowDate DATE NOT NULL,
+-- Create Members Table
+CREATE TABLE Members (
+    MemberID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Email VARCHAR(100),
+    Phone VARCHAR(15),
+    MembershipDate DATE
+);
+
+-- Create Librarians Table
+CREATE TABLE Librarians (
+    LibrarianID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100),
+    Email VARCHAR(100),
+    Phone VARCHAR(15)
+);
+
+-- Create BorrowingRecords Table
+CREATE TABLE BorrowingRecords (
+    BorrowID INT AUTO_INCREMENT PRIMARY KEY,
+    MemberID INT,
+    BookID INT,
+    BorrowDate DATE,
+    DueDate DATE,
     ReturnDate DATE,
-    Status ENUM('Borrowed', 'Returned') DEFAULT 'Borrowed',
-    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
-    FOREIGN KEY (BookID) REFERENCES Books(BookID) ON DELETE CASCADE
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
+    FOREIGN KEY (BookID) REFERENCES Books(BookID)
 );
 
--- Table: Reservations
+-- Create Fines Table
+CREATE TABLE Fines (
+    FineID INT AUTO_INCREMENT PRIMARY KEY,
+    BorrowID INT,
+    Amount DECIMAL(10, 2),
+    Status VARCHAR(50),
+    FOREIGN KEY (BorrowID) REFERENCES BorrowingRecords(BorrowID)
+);
+
+-- Create Reservations Table
 CREATE TABLE Reservations (
-    ReservationID INT PRIMARY KEY AUTO_INCREMENT,
-    UserID INT NOT NULL,
-    BookID INT NOT NULL,
-    ReservationDate DATE NOT NULL,
-    Status ENUM('Pending', 'Fulfilled', 'Cancelled') DEFAULT 'Pending',
-    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
-    FOREIGN KEY (BookID) REFERENCES Books(BookID) ON DELETE CASCADE
+    ReservationID INT AUTO_INCREMENT PRIMARY KEY,
+    MemberID INT,
+    BookID INT,
+    ReservationDate DATE,
+    Status VARCHAR(50),
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
+    FOREIGN KEY (BookID) REFERENCES Books(BookID)
 );
 
--- Table: Staff
-CREATE TABLE Staff (
-    StaffID INT PRIMARY KEY AUTO_INCREMENT,
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) UNIQUE NOT NULL,
-    Role ENUM('Librarian', 'Assistant') NOT NULL,
-    HireDate DATE NOT NULL
-);
+-- Insert Sample Data into Books
+INSERT INTO Books (Title, Author, Genre, ISBN, PublicationYear, CopiesAvailable)
+VALUES 
+('The Catcher in the Rye', 'J.D. Salinger', 'Fiction', '9780316769488', 1951, 5),
+('To Kill a Mockingbird', 'Harper Lee', 'Fiction', '9780060935467', 1960, 3),
+('1984', 'George Orwell', 'Dystopian', '9780451524935', 1949, 4),
+('The Great Gatsby', 'F. Scott Fitzgerald', 'Classic', '9780743273565', 1925, 2);
 
--- Example Queries
--- 1. Adding a new book
-INSERT INTO Books (Title, Author, Genre, ISBN, Publisher, PublicationYear, CopiesAvailable)
-VALUES ('The Great Gatsby', 'F. Scott Fitzgerald', 'Fiction', '9780743273565', 'Scribner', 1925, 5);
+-- Insert Sample Data into Members
+INSERT INTO Members (FirstName, LastName, Email, Phone, MembershipDate)
+VALUES 
+('Alice', 'Johnson', 'alice.johnson@example.com', '1234567890', '2023-01-15'),
+('Bob', 'Smith', 'bob.smith@example.com', '9876543210', '2023-03-10'),
+('Charlie', 'Brown', 'charlie.brown@example.com', '5678901234', '2023-05-20');
 
--- 2. Registering a new user
-INSERT INTO Users (Name, Email, PhoneNumber, Address, MembershipDate)
-VALUES ('John Doe', 'johndoe@example.com', '123-456-7890', '123 Elm Street', CURDATE());
+-- Insert Sample Data into Librarians
+INSERT INTO Librarians (Name, Email, Phone)
+VALUES 
+('Emma Brown', 'emma.brown@example.com', '1122334455'),
+('James White', 'james.white@example.com', '5566778899');
 
--- 3. Borrowing a book
-INSERT INTO BorrowRecords (UserID, BookID, BorrowDate)
-VALUES (1, 1, CURDATE());
+-- Insert Sample Data into BorrowingRecords
+INSERT INTO BorrowingRecords (MemberID, BookID, BorrowDate, DueDate, ReturnDate)
+VALUES 
+(1, 1, '2023-12-01', '2023-12-15', NULL),
+(2, 2, '2023-11-20', '2023-12-05', '2023-12-04'),
+(3, 3, '2023-12-02', '2023-12-16', NULL);
 
--- 4. Reserving a book
-INSERT INTO Reservations (UserID, BookID, ReservationDate)
-VALUES (1, 2, CURDATE());
+-- Insert Sample Data into Fines
+INSERT INTO Fines (BorrowID, Amount, Status)
+VALUES 
+(1, 20.00, 'Unpaid'),
+(2, 0.00, 'Paid');
 
--- 5. Returning a book
-UPDATE BorrowRecords
-SET ReturnDate = CURDATE(), Status = 'Returned'
-WHERE RecordID = 1;
+-- Insert Sample Data into Reservations
+INSERT INTO Reservations (MemberID, BookID, ReservationDate, Status)
+VALUES 
+(1, 3, '2023-12-10', 'Active'),
+(2, 4, '2023-12-12', 'Active');
 
--- 6. Listing all borrowed books by a user
-SELECT b.Title, br.BorrowDate, br.ReturnDate, br.Status
-FROM BorrowRecords br
-JOIN Books b ON br.BookID = b.BookID
-WHERE br.UserID = 1;
+-- Queries
 
--- 7. Listing available copies of a book
-SELECT Title, CopiesAvailable
-FROM Books
-WHERE BookID = 1;
+-- 1. List all available books along with their details
+SELECT * FROM Books WHERE CopiesAvailable > 0;
+
+-- 2. View all members with their membership information
+SELECT MemberID, CONCAT(FirstName, ' ', LastName) AS FullName, Email, Phone, MembershipDate
+FROM Members;
+
+-- 3. List borrowing records for a specific member
+SELECT b.BorrowID, bk.Title, b.BorrowDate, b.DueDate, b.ReturnDate
+FROM BorrowingRecords b
+JOIN Books bk ON b.BookID = bk.BookID
+WHERE b.MemberID = 1;
+
+-- 4. Identify overdue books
+SELECT b.BorrowID, m.FirstName, m.LastName, bk.Title, b.DueDate
+FROM BorrowingRecords b
+JOIN Members m ON b.MemberID = m.MemberID
+JOIN Books bk ON b.BookID = bk.BookID
+WHERE b.DueDate < CURDATE() AND b.ReturnDate IS NULL;
+
+-- 5. Calculate total fines for a specific member
+SELECT SUM(f.Amount) AS TotalFines
+FROM Fines f
+JOIN BorrowingRecords br ON f.BorrowID = br.BorrowID
+WHERE br.MemberID = 1;
+
+-- 6. Add a returned book and update inventory
+UPDATE BorrowingRecords
+SET ReturnDate = CURDATE()
+WHERE BorrowID = 1;
+
+UPDATE Books
+SET CopiesAvailable = CopiesAvailable + 1
+WHERE BookID = (SELECT BookID FROM BorrowingRecords WHERE BorrowID = 1);
+
+-- 7. View active reservations
+SELECT r.ReservationID, m.FirstName, m.LastName, bk.Title, r.ReservationDate, r.Status
+FROM Reservations r
+JOIN Members m ON r.MemberID = m.MemberID
+JOIN Books bk ON r.BookID = bk.BookID
+WHERE r.Status = 'Active';
+
+-- 8. Cancel a reservation
+UPDATE Reservations
+SET Status = 'Cancelled'
+WHERE ReservationID = 1;
+
+-- 9. Generate borrowing history for a member
+SELECT br.BorrowID, bk.Title, br.BorrowDate, br.DueDate, br.ReturnDate
+FROM BorrowingRecords br
+JOIN Books bk ON br.BookID = bk.BookID
+WHERE br.MemberID = 1;
+
+-- 10. Add a fine for overdue books
+INSERT INTO Fines (BorrowID, Amount, Status)
+VALUES 
+(3, 15.00, 'Unpaid');
