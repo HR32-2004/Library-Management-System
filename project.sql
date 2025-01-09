@@ -2,33 +2,36 @@
 CREATE DATABASE IF NOT EXISTS LibraryDB;
 USE LibraryDB;
 
+-- Drop tables if they exist to avoid conflicts
+DROP TABLE IF EXISTS Fines, Reservations, BorrowingRecords, Librarians, Members, Books;
+
 -- Create Books Table
 CREATE TABLE Books (
     BookID INT AUTO_INCREMENT PRIMARY KEY,
-    Title VARCHAR(100),
+    Title VARCHAR(100) NOT NULL,
     Author VARCHAR(100),
     Genre VARCHAR(50),
-    ISBN VARCHAR(20),
-    PublicationYear INT,
-    CopiesAvailable INT
+    ISBN VARCHAR(20) UNIQUE,
+    PublicationYear INT CHECK (PublicationYear >= 1000 AND PublicationYear <= YEAR(CURDATE())),
+    CopiesAvailable INT DEFAULT 0
 );
 
 -- Create Members Table
 CREATE TABLE Members (
     MemberID INT AUTO_INCREMENT PRIMARY KEY,
-    FirstName VARCHAR(50),
+    FirstName VARCHAR(50) NOT NULL,
     LastName VARCHAR(50),
-    Email VARCHAR(100),
-    Phone VARCHAR(15),
-    MembershipDate DATE
+    Email VARCHAR(100) UNIQUE,
+    Phone VARCHAR(15) UNIQUE,
+    MembershipDate DATE DEFAULT CURDATE()
 );
 
 -- Create Librarians Table
 CREATE TABLE Librarians (
     LibrarianID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(100),
-    Email VARCHAR(100),
-    Phone VARCHAR(15)
+    Name VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE,
+    Phone VARCHAR(15) UNIQUE
 );
 
 -- Create BorrowingRecords Table
@@ -36,20 +39,20 @@ CREATE TABLE BorrowingRecords (
     BorrowID INT AUTO_INCREMENT PRIMARY KEY,
     MemberID INT,
     BookID INT,
-    BorrowDate DATE,
-    DueDate DATE,
+    BorrowDate DATE NOT NULL DEFAULT CURDATE(),
+    DueDate DATE NOT NULL,
     ReturnDate DATE,
-    FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
-    FOREIGN KEY (BookID) REFERENCES Books(BookID)
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID) ON DELETE CASCADE,
+    FOREIGN KEY (BookID) REFERENCES Books(BookID) ON DELETE CASCADE
 );
 
 -- Create Fines Table
 CREATE TABLE Fines (
     FineID INT AUTO_INCREMENT PRIMARY KEY,
     BorrowID INT,
-    Amount DECIMAL(10, 2),
-    Status VARCHAR(50),
-    FOREIGN KEY (BorrowID) REFERENCES BorrowingRecords(BorrowID)
+    Amount DECIMAL(10, 2) NOT NULL CHECK (Amount >= 0),
+    Status VARCHAR(50) DEFAULT 'Unpaid',
+    FOREIGN KEY (BorrowID) REFERENCES BorrowingRecords(BorrowID) ON DELETE CASCADE
 );
 
 -- Create Reservations Table
@@ -57,10 +60,10 @@ CREATE TABLE Reservations (
     ReservationID INT AUTO_INCREMENT PRIMARY KEY,
     MemberID INT,
     BookID INT,
-    ReservationDate DATE,
-    Status VARCHAR(50),
-    FOREIGN KEY (MemberID) REFERENCES Members(MemberID),
-    FOREIGN KEY (BookID) REFERENCES Books(BookID)
+    ReservationDate DATE DEFAULT CURDATE(),
+    Status VARCHAR(50) DEFAULT 'Active',
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID) ON DELETE CASCADE,
+    FOREIGN KEY (BookID) REFERENCES Books(BookID) ON DELETE CASCADE
 );
 
 -- Insert Sample Data into Books
